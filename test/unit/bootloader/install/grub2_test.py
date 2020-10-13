@@ -188,6 +188,32 @@ class TestBootLoaderInstallGrub2:
     @patch('kiwi.bootloader.install.grub2.MountManager')
     @patch('kiwi.bootloader.install.grub2.Defaults.get_grub_path')
     @patch('kiwi.bootloader.install.grub2.glob.glob')
+    def test_install_on_dasd_disk(
+        self, mock_glob, mock_grub_path, mock_mount_manager,
+        mock_command, mock_which, mock_wipe
+    ):
+        self.firmware.get_partition_table_type = mock.Mock(
+            return_value='dasd'
+        )
+
+        def side_effect(device, mountpoint=None):
+            return self.mount_managers.pop()
+
+        mock_mount_manager.side_effect = side_effect
+
+        self.bootloader.install()
+        self.bootloader.root_mount.mount.assert_called_once_with()
+        self.bootloader.boot_mount.mount.assert_called_once_with()
+        mock_command.assert_called_once_with(
+            ['chroot', 'tmp_root', 'grub2-zipl-setup']
+        )
+
+    @patch('kiwi.bootloader.install.grub2.Path.wipe')
+    @patch('kiwi.bootloader.install.grub2.Path.which')
+    @patch('kiwi.bootloader.install.grub2.Command.run')
+    @patch('kiwi.bootloader.install.grub2.MountManager')
+    @patch('kiwi.bootloader.install.grub2.Defaults.get_grub_path')
+    @patch('kiwi.bootloader.install.grub2.glob.glob')
     def test_install_ppc_ieee1275(
         self, mock_glob, mock_grub_path, mock_mount_manager,
         mock_command, mock_which, mock_wipe

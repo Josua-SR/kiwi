@@ -230,18 +230,34 @@ class BootLoaderInstallGrub2(BootLoaderInstallBase):
             Path.wipe(grubenv)
 
         # install grub2 boot code
-        Command.run(
-            [
-                'chroot', self.root_mount.mountpoint,
-                self._get_grub2_install_tool_name(self.root_mount.mountpoint)
-            ] + self.install_arguments + [
-                '--directory', module_directory,
-                '--boot-directory', boot_directory,
-                '--target', self.target,
-                '--modules', self.modules,
-                self.install_device
-            ]
-        )
+        if self.firmware.get_partition_table_type() == 'dasd':
+            # On s390 and in CDL mode (4k DASD) the call of grub2-install
+            # does not work because grub2-install is not able to identify
+            # a 4k fdasd partitioned device as a grub supported device
+            # and fails. As grub2-install is only used to invoke
+            # grub2-zipl-setup and has no other job to do we can
+            # circumvent this problem by directly calling grub2-zipl-setup
+            # instead.
+            Command.run(
+                [
+                    'chroot', self.root_mount.mountpoint, 'grub2-zipl-setup'
+                ]
+            )
+        else:
+            Command.run(
+                [
+                    'chroot', self.root_mount.mountpoint,
+                    self._get_grub2_install_tool_name(
+                        self.root_mount.mountpoint
+                    )
+                ] + self.install_arguments + [
+                    '--directory', module_directory,
+                    '--boot-directory', boot_directory,
+                    '--target', self.target,
+                    '--modules', self.modules,
+                    self.install_device
+                ]
+            )
 
         if self.firmware and self.firmware.efi_mode() == 'uefi':
             shim_install = self._get_shim_install_tool_name(
