@@ -197,9 +197,7 @@ class Defaults:
         :rtype: str
         """
         from .cli import Cli
-        return os.path.abspath(os.path.normpath(
-            Cli().get_global_args().get('--shared-cache-dir')
-        )).lstrip(os.sep)
+        return os.path.abspath(os.path.normpath('cache')).lstrip(os.sep)
 
     @staticmethod
     def get_sync_options():
